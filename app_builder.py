@@ -6,6 +6,13 @@ import subprocess
 import shutil
 import threading
 
+# Try to import PIL for PNG to ICO conversion
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
 class WebAppBuilder:
     VERSION = "1.0.0"
     OWNER = "OMT Data MLG"
@@ -85,10 +92,13 @@ class WebAppBuilder:
         ttk.Entry(main_frame, textvariable=self.app_url).grid(row=4, column=1, columnspan=2, pady=5, sticky=(tk.W, tk.E), padx=(5, 0))
         
         # Icon File
-        ttk.Label(main_frame, text="Icon File (.ico):").grid(row=5, column=0, sticky=tk.W, pady=5)
+        icon_label_text = "Icon File (.ico/.png):" if PIL_AVAILABLE else "Icon File (.ico):"
+        ttk.Label(main_frame, text=icon_label_text).grid(row=5, column=0, sticky=tk.W, pady=5)
         ttk.Entry(main_frame, textvariable=self.icon_path).grid(row=5, column=1, pady=5, sticky=(tk.W, tk.E), padx=(5, 5))
         ttk.Button(main_frame, text="Browse...", command=self.browse_icon).grid(row=5, column=2, pady=5, sticky=tk.E)
-        ttk.Label(main_frame, text="(Optional - uses default icon if not specified)", font=('Arial', 8), foreground='gray').grid(row=6, column=1, columnspan=2, sticky=tk.W, padx=(5, 0))
+        
+        hint_text = "(Optional - uses default icon if not specified. PNG will be converted to ICO)" if PIL_AVAILABLE else "(Optional - uses default icon if not specified)"
+        ttk.Label(main_frame, text=hint_text, font=('Arial', 8), foreground='gray').grid(row=6, column=1, columnspan=2, sticky=tk.W, padx=(5, 0))
         
         # Window Size
         size_frame = ttk.LabelFrame(main_frame, text="Window Size", padding="10")
@@ -125,9 +135,15 @@ class WebAppBuilder:
         self.output_button.grid(row=12, column=0, columnspan=3, sticky=(tk.W, tk.E))
         
     def browse_icon(self):
+        filetypes = [("Icon Files", "*.ico")]
+        if PIL_AVAILABLE:
+            filetypes.insert(0, ("Image Files", "*.ico *.png"))
+            filetypes.append(("PNG Files", "*.png"))
+        filetypes.append(("All Files", "*.*"))
+        
         filename = filedialog.askopenfilename(
             title="Select Icon File",
-            filetypes=[("Icon Files", "*.ico"), ("All Files", "*.*")]
+            filetypes=filetypes
         )
         if filename:
             self.icon_path.set(filename)
@@ -157,6 +173,16 @@ class WebAppBuilder:
             messagebox.showerror("Error", "Icon file not found")
             return False
         
+        # Check if it's a PNG file and PIL is not available
+        if self.icon_path.get().lower().endswith('.png') and not PIL_AVAILABLE:
+            messagebox.showerror(
+                "Error", 
+                "PNG support requires Pillow library.\n\n"
+                "Install with: pip install Pillow\n\n"
+                "Or use an .ico file instead."
+            )
+            return False
+        
         try:
             width = int(self.window_width.get())
             height = int(self.window_height.get())
@@ -167,6 +193,25 @@ class WebAppBuilder:
             return False
         
         return True
+    
+    def convert_png_to_ico(self, png_path, ico_path):
+        """Convert PNG file to ICO format with multiple sizes"""
+        try:
+            img = Image.open(png_path)
+            
+            # Convert to RGBA if not already
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            
+            # Create icon with multiple sizes for better quality
+            icon_sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
+            
+            # Resize image to all sizes
+            img.save(ico_path, format='ICO', sizes=icon_sizes)
+            return True
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to convert PNG to ICO:\n{str(e)}")
+            return False
     
     def get_safe_filename(self, name):
         """Convert app name to safe filename (no spaces, special chars)"""
@@ -389,9 +434,19 @@ if __name__ == "__main__":
             output_dir = os.path.join(os.getcwd(), "output", safe_name)
             os.makedirs(output_dir, exist_ok=True)
             
-            # Copy icon file
+            # Handle icon file - convert PNG to ICO if needed
             icon_dest = os.path.join(output_dir, "app_icon.ico")
-            shutil.copy2(self.icon_path.get(), icon_dest)
+            icon_source = self.icon_path.get()
+            
+            if icon_source.lower().endswith('.png'):
+                # Convert PNG to ICO
+                self.update_status("Converting PNG to ICO...")
+                if not self.convert_png_to_ico(icon_source, icon_dest):
+                    self.root.after(0, lambda: self.build_error("Failed to convert PNG to ICO"))
+                    return
+            else:
+                # Just copy ICO file
+                shutil.copy2(icon_source, icon_dest)
             
             # Generate main script
             script_path = self.generate_main_script(output_dir)
@@ -410,11 +465,19 @@ if __name__ == "__main__":
                 script_path
             ]
             
+            # Hide console window on Windows
+            startupinfo = None
+            if sys.platform == 'win32':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
+            
             result = subprocess.run(
                 cmd,
                 cwd=output_dir,
                 capture_output=True,
-                text=True
+                text=True,
+                startupinfo=startupinfo
             )
             
             if result.returncode == 0:

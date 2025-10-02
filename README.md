@@ -13,13 +13,14 @@ Web App Builder allows you to create custom desktop launchers for web applicatio
 
 - **🖱️ Simple GUI Interface** - No coding required, just fill in the form
 - **🔐 Windows Integrated Authentication** - Automatic SSO with Intel/corporate web apps
-- **🎨 Custom Icons** - Use your own `.ico` file or the default icon
+- **🎨 Custom Icons** - Use your own `.ico` or `.png` file (PNG auto-converted to ICO)
 - **📏 Configurable Window Size** - Set custom width and height
 - **🪟 Frameless Mode** - Optional borderless window (no title bar)
 - **📌 Start Menu Shortcuts** - Automatically create Start Menu shortcuts
 - **🧹 Clean Output** - Only `.exe` and `.log` files in output folder
 - **🌐 Browser Fallback** - Uses Microsoft Edge or Google Chrome
 - **📦 Single File Output** - Each app is a single standalone executable
+- **🎯 High Resolution Icons** - PNG support with multi-size ICO conversion
 
 ## 📋 Prerequisites
 
@@ -27,6 +28,7 @@ Web App Builder allows you to create custom desktop launchers for web applicatio
 - **Python 3.7+** installed
 - **PyInstaller** - Install with: `pip install pyinstaller`
 - **pywin32** - Install with: `pip install pywin32`
+- **Pillow** (optional) - For PNG icon support: `pip install Pillow`
 
 ### For Using the App Builder (Exe Mode)
 - **Windows 10/11**
@@ -58,7 +60,8 @@ Then run `dist\Web App Builder.exe`
      - Spaces are allowed in the name
    - **Web URL**: Enter the full URL (must start with `http://` or `https://`)
      - Example: `https://performx.intel.com`
-   - **Icon File**: (Optional) Browse and select a `.ico` file
+   - **Icon File**: (Optional) Browse and select a `.ico` or `.png` file
+     - PNG files are automatically converted to ICO format (requires Pillow)
      - If left empty, uses the default icon
    - **Window Size**: Set width and height in pixels
      - Default: 1200 × 800
@@ -191,6 +194,17 @@ class WebAppBuilder:
 ### "Please select an icon file or ensure app_icon.ico exists"
 **Solution:** Make sure `app_icon.ico` is in the same directory as `app_builder.py` or the exe.
 
+### "PNG support requires Pillow library"
+**Solution:** 
+- Install Pillow: `pip install Pillow`
+- Or use a `.ico` file instead of PNG
+
+### "Failed to convert PNG to ICO"
+**Solution:**
+- Ensure the PNG file is valid and not corrupted
+- Try using a smaller PNG file (recommended: 256x256 or 512x512)
+- Alternatively, convert the PNG to ICO manually using an online converter
+
 ### "PyInstaller failed"
 **Solution:** 
 - Ensure PyInstaller is installed: `pip install pyinstaller`
@@ -221,6 +235,7 @@ class WebAppBuilder:
 - **PyInstaller** - Converts Python scripts to executables
 - **Microsoft Edge / Chrome** - Browser engine with `--app` mode
 - **pywin32** - Windows COM automation for shortcuts
+- **Pillow** - Image processing for PNG to ICO conversion (optional)
 
 ### Browser Arguments
 ```python
@@ -269,3 +284,6 @@ Created by OMT Data MLG team to simplify web application deployment and improve 
   - Automatic output cleanup
   - Version and owner display
   - Window icon integration
+  - PNG to ICO conversion support
+  - Silent PyInstaller execution
+  - Multi-size ICO generation for high resolution
