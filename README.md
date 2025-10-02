@@ -254,13 +254,6 @@ After building, these files are automatically removed:
 
 Internal tool for OMT Data MLG use.
 
-## 👥 Support
-
-For issues, questions, or feature requests:
-- Contact: OMT Data MLG team
-- Email: [Your team email]
-- Wiki: [Internal documentation link]
-
 ## 🎉 Acknowledgments
 
 Created by OMT Data MLG team to simplify web application deployment and improve user experience with Windows Integrated Authentication.
